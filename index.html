@@ -810,7 +810,9 @@ function initAudio() {
   const len = actx.sampleRate * 2;
   const buf = actx.createBuffer(1, len, actx.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  // own tiny generator for the noise, so starting audio never shifts Math.random
+  let ns = 22222;
+  for (let i = 0; i < len; i++) { ns = (ns * 1103515245 + 12345) % 2147483648; d[i] = ns / 1073741824 - 1; }
   for (let s = 0; s < 2; s++) {
     const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
     const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300; f.Q.value = 2;
@@ -1562,7 +1564,20 @@ window.__aqua = { rings, PHYS, MODES, PEGS, pressure, held, press, release, rest
     held[0].delete('sim'); held[1].delete('sim');
     return landedCount();
   },
-  setMode, };
+  setMode,
+  // hooks for deterministic screen recordings
+  buttonScreen: s => { const p = buttonGroups[s].position; return toScreen(p.x, p.y, p.z); },
+  syncLoop: t => { accTime = 0; last = t; },
+  resetForCapture: () => {
+    firstLanding = true; simTime = 0;
+    pegRigs.forEach(p => { p.a = p.va = p.sq = p.vsq = 0; });
+    recentPops.length = 0; fxEl.innerHTML = '';
+    bLife.fill(0);
+    pressure[0] = pressure[1] = 0; heldFor[0] = heldFor[1] = 0;
+    held[0].clear(); held[1].clear();
+  },
+  landedCount,
+};
 </script>
 </body>
 </html>

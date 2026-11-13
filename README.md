@@ -2,7 +2,9 @@
 
 A 3D take on the handheld water ring toss toy you had as a kid. Pump the water jets, watch the bubbles swirl, and float all 12 rings onto the pegs.
 
-**▶ Play it: https://mailtathagatasarkar-a11y.github.io/aqua-rings/**
+**▶ Play it: https://imtathagata.github.io/aqua-rings/**
+
+![Aqua Rings: all 12 rings landed on the pegs](preview.png)
 
 ## How to play
 
