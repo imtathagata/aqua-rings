@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aqua Rings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1f3b44;
+    --muted: #5f7b83;
+    --card: rgba(255, 255, 255, 0.78);
+    --line: rgba(31, 59, 68, 0.1);
+    --orange: #ff8a1f;
+    --orange-dark: #c95f08;
+    --aqua: #2bb7c9;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', ui-rounded, system-ui, sans-serif;
+    color: var(--ink);
+    background: radial-gradient(120% 90% at 50% 35%, #ffffff 0%, #f5f0e5 55%, #e7dfcd 100%);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; }
+  #app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px 16px; padding: 14px 20px; flex-wrap: wrap; z-index: 3;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 22px; }
+  .brand svg { flex: none; }
+  .stats { display: flex; gap: 8px; }
+  .pill {
+    background: var(--card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 16px; display: flex; gap: 8px; align-items: baseline;
+  }
+  .pill .label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .pill .value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 2.6em; }
+  .pill.bump { animation: bump .45s cubic-bezier(.3, 1.6, .5, 1); }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .seg { display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .seg button {
+    border: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted);
+    padding: 6px 13px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+  .swatches { display: flex; gap: 7px; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; }
+  .swatch {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; padding: 0; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.14); transition: transform .15s;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--card);
+    display: grid; place-items: center; cursor: pointer; transition: transform .15s, background .15s;
+  }
+  .icon-btn:hover { background: #fff; transform: translateY(-1px); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  :focus-visible { outline: 2px solid var(--aqua); outline-offset: 2px; }
+
+  /* ---------- Stage ---------- */
+  #stage { position: relative; flex: 1; min-height: 0; touch-action: none; cursor: pointer; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+
+  /* ---------- Pump buttons ---------- */
+  .pumps {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; pointer-events: none;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 0 max(28px, env(safe-area-inset-right)) max(26px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
+  }
+  .pump {
+    pointer-events: auto; touch-action: none; position: relative; border: 0; background: none; cursor: pointer;
+    width: 124px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0;
+  }
+  .pump .well { position: relative; width: 124px; height: 124px; display: grid; place-items: center; }
+  .pump svg.gauge { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+  .gauge .track { fill: none; stroke: rgba(31,59,68,.1); stroke-width: 5; }
+  .gauge .fill { fill: none; stroke: var(--aqua); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 289; }
+  .pump .cap {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffc27a 0%, var(--orange) 45%, #e8700f 100%);
+    box-shadow: 0 8px 0 var(--orange-dark), 0 14px 22px rgba(201, 95, 8, .35), inset 0 -4px 8px rgba(0,0,0,.08);
+    display: grid; place-items: center; transition: transform .08s, box-shadow .08s;
+  }
+  .pump.down .cap { transform: translateY(6px); box-shadow: 0 2px 0 var(--orange-dark), 0 5px 10px rgba(201, 95, 8, .3), inset 0 -2px 6px rgba(0,0,0,.1); }
+  .pump .key {
+    font-size: 30px; font-weight: 700; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.18); line-height: 1;
+  }
+  .pump .hint { font-size: 14px; font-weight: 500; color: var(--muted); }
+
+  /* ---------- Overlays ---------- */
+  .overlay {
+    position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 16px;
+    background: rgba(240, 236, 226, .35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    transition: opacity .3s;
+  }
+  .overlay[hidden] { display: none; }
+  #win { background: rgba(240, 236, 226, .15); backdrop-filter: none; -webkit-backdrop-filter: none; align-items: start; padding-top: 12vh; }
+  .card {
+    background: rgba(255,255,255,.94); border-radius: 26px; padding: 28px 28px 24px; max-width: 380px; width: 100%;
+    box-shadow: 0 24px 60px rgba(31,59,68,.2), 0 2px 6px rgba(31,59,68,.08); text-align: center;
+    animation: rise .35s cubic-bezier(.2, 1.2, .4, 1);
+  }
+  @keyframes rise { from { transform: translateY(14px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+  .card h1, .card h2 { font-size: 30px; font-weight: 700; line-height: 1.1; text-wrap: balance; }
+  .card .lede { margin-top: 8px; color: var(--muted); font-size: 16px; line-height: 1.4; text-wrap: pretty; }
+  .keys { display: flex; justify-content: center; gap: 14px; margin: 22px 0 14px; }
+  .keys > div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  kbd {
+    font: inherit; font-weight: 600; font-size: 18px; color: var(--ink); min-width: 46px; height: 46px; padding: 0 12px;
+    display: grid; place-items: center; background: #fff; border-radius: 12px;
+    box-shadow: 0 3px 0 #cfd8da, 0 0 0 1px #dfe6e7 inset;
+  }
+  kbd.orange { background: var(--orange); color: #fff; box-shadow: 0 3px 0 var(--orange-dark); }
+  .small { font-size: 14px; color: var(--muted); line-height: 1.45; margin-top: 6px; text-wrap: pretty; }
+  .primary {
+    margin-top: 20px; width: 100%; border: 0; border-radius: 16px; padding: 14px 18px; cursor: pointer;
+    font-size: 18px; font-weight: 600; color: #fff; background: var(--aqua);
+    box-shadow: 0 4px 0 #1b8796; transition: transform .08s, box-shadow .08s;
+  }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b8796; }
+  .result { display: flex; justify-content: center; gap: 28px; margin-top: 18px; }
+  .result div { display: flex; flex-direction: column; gap: 2px; }
+  .result span { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .result b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .newbest { margin-top: 10px; color: var(--orange-dark); font-weight: 600; }
+
+  /* ---------- Small screens: buttons sit below the toy ---------- */
+  @media (max-width: 760px), (max-height: 560px) and (max-width: 900px) {
+    header { padding: 10px 12px; justify-content: center; }
+    .brand { display: none; }
+    .swatches { display: none; }
+    .pumps { position: static; padding-top: 4px; }
+    .pump { width: 110px; }
+    .pump .well { width: 104px; height: 104px; }
+    .pump .cap { width: 78px; height: 78px; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <circle cx="15" cy="15" r="13" fill="#d6f4f7"/>
+        <ellipse cx="15" cy="17" rx="8" ry="3.2" fill="none" stroke="#ff8a1f" stroke-width="2.6"/>
+        <rect x="14" y="5" width="2.2" height="12" rx="1.1" fill="#ff6fae"/>
+        <circle cx="21.5" cy="9" r="1.6" fill="#fff" stroke="#2bb7c9" stroke-width="1"/>
+      </svg>
+      Aqua Rings
+    </div>
+    <div class="stats">
+      <div class="pill" id="ringPill"><span class="label">Rings</span><span class="value" id="ringCount">0/12</span></div>
+      <div class="pill"><span class="label">Time</span><span class="value" id="timer">0:00</span></div>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Difficulty">
+        <button id="modeEasy" aria-pressed="true" title="Rings snap onto pegs and stay put">Easy</button>
+        <button id="modeClassic" aria-pressed="false" title="Like the real toy: tight aim, and rings can float off again">Classic</button>
+      </div>
+      <div class="swatches" id="swatches" role="group" aria-label="Toy color"></div>
+      <button class="icon-btn" id="soundBtn" aria-label="Mute sound" title="Sound">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="soundWave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      </button>
+      <button class="icon-btn" id="restartBtn" aria-label="Restart" title="Restart (Esc)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="stage"></div>
+
+  <div class="pumps">
+    <button class="pump" data-side="0" aria-label="Left water jet">
+      <span class="well">
+        <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="fill" cx="50" cy="50" r="46"/></svg>
+        <span class="cap"><span class="key">A</span></span>
+      </span>
+      <span class="hint">Left jet</span>
+    </button>
+    <button class="pump" data-side="1" aria-label="Right water jet">
+      <span class="well">
+        <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="fill" cx="50" cy="50" r="46"/></svg>
+        <span class="cap"><span class="key">L</span></span>
+      </span>
+      <span class="hint">Right jet</span>
+    </button>
+  </div>
+
+  <div class="overlay" id="intro">
+    <div class="card">
+      <h1>Aqua Rings</h1>
+      <p class="lede">Pump the water jets to float the rings up, then let them sink onto the pegs. Land all 12.</p>
+      <div class="keys">
+        <div><kbd class="orange">A</kbd>Left jet</div>
+        <div><kbd>Space</kbd>Both</div>
+        <div><kbd class="orange">L</kbd>Right jet</div>
+      </div>
+      <p class="small">Any key on the left or right half of your keyboard works. You can also hold the orange buttons, or press either side of the toy.</p>
+      <p class="small"><b>Tip:</b> tap for a gentle lift, hold for a big gush.</p>
+      <button class="primary" id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="win" hidden>
+    <div class="card">
+      <h2>All rings landed!</h2>
+      <div class="result">
+        <div><span>Time</span><b id="winTime">0:00</b></div>
+        <div><span>Best</span><b id="winBest">0:00</b></div>
+      </div>
+      <p class="newbest" id="newBest" hidden>New best time</p>
+      <button class="primary" id="againBtn">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =========================================================================
+   Tuning
+   ========================================================================= */
+const TANK = { hw: 2.9, hd: 0.5, floorY: -3.3, top: 3.35, waterY: 3.0 };
+const NOZZLES = [ { x: -1.85, dir: 1 }, { x: 1.85, dir: -1 } ];
+const FLOOR_SLOPE = 0.48;
+const RING_R = 0.27, TUBE = 0.068;
+const BALL_R = 0.17;
+const PEGS = [
+  { x: -1.05, tip: 0.85, len: 1.15 },
+  { x: 0.12,  tip: 2.05, len: 1.15 },
+  { x: 1.2,   tip: 0.2,  len: 1.15 },
+].map(p => ({ ...p, ballY: p.tip - p.len }));
+const RING_COUNT = 12;
+const RING_COLORS = [0xffd23b, 0xff8a24, 0xe8323c, 0x8fdc45, 0xff6fae, 0x4fb8ff];
+const TOY_COLORS = [
+  { name: 'Lime', hex: '#7bd84e' },
+  { name: 'Bubblegum', hex: '#ff86bd' },
+  { name: 'Sky', hex: '#52b8ff' },
+  { name: 'Sunny', hex: '#ffcf3d' },
+  { name: 'Grape', hex: '#a68cff' },
+];
+
+const PHYS = {
+  gravity: 1.45,      // sink speed in water
+  drag: 1.7,          // linear water drag
+  jet: 15,            // jet strength
+  jetSlope: 0.12,     // how far the jet leans toward the middle
+  spread: 0.65,       // sideways push away from the jet's centre
+  angDrag: 2.2,
+};
+const MODES = {
+  easy:    { tol: 0.30, magnet: 1,    lock: true,  minUpright: 0 },
+  classic: { tol: 0.21, magnet: 0.2, lock: false, minUpright: 0.4 },
+};
+
+/* =========================================================================
+   Renderer, scene, camera
+   ========================================================================= */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.0;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+pmrem.dispose();
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd8ecea, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+sun.position.set(4, 8, 10);
+scene.add(sun);
+
+const toy = new THREE.Group();
+scene.add(toy);
+const BASE_ROT = { x: 0.13, y: -0.14 };
+toy.rotation.set(BASE_ROT.x, BASE_ROT.y, 0);
+
+/* =========================================================================
+   Helpers: canvas textures
+   ========================================================================= */
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const shadowTex = canvasTex(256, 128, (g, w, h) => {
+  const grd = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2);
+  grd.addColorStop(0, 'rgba(60,50,30,0.42)');
+  grd.addColorStop(0.55, 'rgba(60,50,30,0.16)');
+  grd.addColorStop(1, 'rgba(60,50,30,0)');
+  g.fillStyle = grd;
+  g.scale(1, 0.5); g.translate(0, h / 2);
+  g.fillRect(0, -h, w, h * 4);
+});
+const streakTex = canvasTex(64, 4, (g, w) => {
+  const grd = g.createLinearGradient(0, 0, w, 0);
+  grd.addColorStop(0, 'rgba(255,255,255,0)');
+  grd.addColorStop(0.5, 'rgba(255,255,255,1)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, w, 4);
+});
+
+/* =========================================================================
+   Toy body
+   ========================================================================= */
+const plastic = new THREE.MeshPhysicalMaterial({ color: TOY_COLORS[0].hex, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 });
+const tankBottom = TANK.floorY - 0.7;
+const tankH = TANK.top - tankBottom;
+
+// Top cap
+const cap = new THREE.Mesh(new RoundedBoxGeometry(6.55, 0.42, 1.7, 4, 0.12), plastic);
+cap.position.y = TANK.top + 0.2;
+toy.add(cap);
+
+// Base + collar
+const base = new THREE.Mesh(new RoundedBoxGeometry(6.9, 1.95, 2.5, 5, 0.26), plastic);
+base.position.y = tankBottom - 0.97;
+toy.add(base);
+const collar = new THREE.Mesh(new RoundedBoxGeometry(6.45, 0.3, 1.75, 3, 0.1), plastic);
+collar.position.y = tankBottom + 0.05;
+toy.add(collar);
+
+// Buttons on the base
+const btnMat = new THREE.MeshPhysicalMaterial({ color: 0xff7d14, roughness: 0.35, clearcoat: 0.6 });
+const ringCollarMat = plastic;
+const buttons = NOZZLES.map(n => {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.09, 12, 32), ringCollarMat);
+  const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.55, 28), btnMat);
+  btn.rotation.x = Math.PI / 2;
+  btn.position.z = 0.22;
+  g.add(ring, btn);
+  g.position.set(n.x, base.position.y - 0.05, 1.27);
+  toy.add(g);
+  return btn;
+});
+
+// Label between the buttons
+const labelMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
+const label = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), labelMat);
+label.position.set(0, base.position.y - 0.05, 1.255);
+toy.add(label);
+function drawLabel() {
+  labelMat.map = canvasTex(512, 128, (g, w, h) => {
+    g.fillStyle = 'rgba(255,255,255,0.95)';
+    g.font = '700 74px Fredoka, ui-rounded, system-ui, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('AQUA RINGS', w / 2, h / 2 + 4);
+  });
+  labelMat.needsUpdate = true;
+}
+drawLabel();
+document.fonts?.load('700 74px Fredoka').then(drawLabel).catch(() => {});
+
+// Inner floor: a "W" that funnels rings toward the two nozzles
+function floorAt(x) {
+  const d = Math.min(Math.abs(x - NOZZLES[0].x), Math.abs(x - NOZZLES[1].x));
+  return TANK.floorY + FLOOR_SLOPE * d;
+}
+function floorSlope(x) {
+  const n = Math.abs(x - NOZZLES[0].x) < Math.abs(x - NOZZLES[1].x) ? NOZZLES[0] : NOZZLES[1];
+  return FLOOR_SLOPE * Math.sign(x - n.x);
+}
+{
+  const s = new THREE.Shape();
+  const xs = [-TANK.hw, NOZZLES[0].x, 0, NOZZLES[1].x, TANK.hw];
+  s.moveTo(-TANK.hw, tankBottom + 0.02);
+  xs.forEach(x => s.lineTo(x, floorAt(x)));
+  s.lineTo(TANK.hw, tankBottom + 0.02);
+  s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: TANK.hd * 2, bevelEnabled: false });
+  geo.translate(0, 0, -TANK.hd);
+  const floor = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color: 0xa9e3ea, roughness: 0.25, clearcoat: 0.6 }));
+  toy.add(floor);
+  // nozzles
+  const nozMat = new THREE.MeshStandardMaterial({ color: 0x2a6f78, roughness: 0.5 });
+  NOZZLES.forEach(n => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.08, 20), nozMat);
+    m.position.set(n.x, TANK.floorY + 0.02, 0);
+    toy.add(m);
+  });
+}
+
+// Pegs: pink stick on a pink ball, held by a clear bracket to the back wall
+const pegMat = new THREE.MeshPhysicalMaterial({ color: 0xff7aa8, roughness: 0.3, clearcoat: 0.7 });
+const clearMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, roughness: 0.1 });
+PEGS.forEach(p => {
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 24, 16), pegMat);
+  ball.position.set(p.x, p.ballY, 0);
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, p.len, 12), pegMat);
+  stick.position.set(p.x, p.ballY + p.len / 2, 0);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 8), pegMat);
+  tip.position.set(p.x, p.tip, 0);
+  const bracket = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, TANK.hd, 12), clearMat);
+  bracket.rotation.x = Math.PI / 2;
+  bracket.position.set(p.x, p.ballY, -TANK.hd / 2);
+  toy.add(ball, stick, tip, bracket);
+});
+
+// Glass tank: back faces first, then water, rings, bubbles, front glass
+const glassGeo = new THREE.BoxGeometry(TANK.hw * 2 + 0.12, tankH, TANK.hd * 2 + 0.12);
+const glassBack = new THREE.Mesh(glassGeo, new THREE.MeshStandardMaterial({
+  color: 0xc8f3f8, transparent: true, opacity: 0.12, roughness: 0.05, side: THREE.BackSide, depthWrite: false,
+}));
+glassBack.position.y = tankBottom + tankH / 2;
+glassBack.renderOrder = 0;
+toy.add(glassBack);
+
+const waterH = TANK.waterY - tankBottom;
+const water = new THREE.Mesh(new THREE.BoxGeometry(TANK.hw * 2, waterH, TANK.hd * 2), new THREE.MeshStandardMaterial({
+  color: 0x2ec4dc, transparent: true, opacity: 0.17, roughness: 0.1, depthWrite: false,
+}));
+water.position.y = tankBottom + waterH / 2;
+water.renderOrder = 1;
+toy.add(water);
+
+// Water surface with ripples
+const surfGeo = new THREE.PlaneGeometry(TANK.hw * 2, TANK.hd * 2, 40, 3);
+surfGeo.rotateX(-Math.PI / 2);
+const surfBase = Float32Array.from(surfGeo.attributes.position.array);
+const surface = new THREE.Mesh(surfGeo, new THREE.MeshStandardMaterial({
+  color: 0xbff4fa, transparent: true, opacity: 0.55, roughness: 0.05, side: THREE.DoubleSide, depthWrite: false,
+}));
+surface.position.y = TANK.waterY;
+surface.renderOrder = 2;
+toy.add(surface);
+
+const glassFront = new THREE.Mesh(glassGeo, new THREE.MeshStandardMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.07, roughness: 0.02, depthWrite: false,
+}));
+glassFront.position.copy(glassBack.position);
+glassFront.renderOrder = 4;
+toy.add(glassFront);
+
+// Glossy highlight streaks on the front glass
+[[-2.35, 0.22, 0.55], [-2.0, 0.07, 0.3], [2.45, 0.12, 0.4]].forEach(([x, w, o]) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, tankH - 0.5), new THREE.MeshBasicMaterial({
+    map: streakTex, transparent: true, opacity: o, depthWrite: false,
+  }));
+  m.position.set(x, glassBack.position.y, TANK.hd + 0.07);
+  m.renderOrder = 5;
+  toy.add(m);
+});
+
+// Soft contact shadow
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(10, 3.4), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2;
+shadow.position.y = base.position.y - 0.97;
+toy.add(shadow);
+
+/* =========================================================================
+   Rings
+   ========================================================================= */
+const ringGeo = new THREE.TorusGeometry(RING_R, TUBE, 12, 32);
+ringGeo.rotateX(Math.PI / 2); // lie flat: hole axis = +Y
+const UP = new THREE.Vector3(0, 1, 0);
+const rings = [];
+for (let i = 0; i < RING_COUNT; i++) {
+  const mesh = new THREE.Mesh(ringGeo, new THREE.MeshPhysicalMaterial({
+    color: RING_COLORS[i % RING_COLORS.length], roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.2,
+  }));
+  toy.add(mesh);
+  rings.push({
+    mesh, p: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), w: new THREE.Vector3(),
+    prevY: 0, peg: -1, slot: 0, yaw: 0, axis: new THREE.Vector3(),
+  });
+}
+
+/* =========================================================================
+   Bubbles (one Points draw call)
+   ========================================================================= */
+const MAXB = 520;
+const bPos = new Float32Array(MAXB * 3), bVel = new Float32Array(MAXB * 3);
+const bSize = new Float32Array(MAXB), bAlpha = new Float32Array(MAXB), bLife = new Float32Array(MAXB), bPhase = new Float32Array(MAXB);
+let bHead = 0;
+const bGeo = new THREE.BufferGeometry();
+bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3).setUsage(THREE.DynamicDrawUsage));
+bGeo.setAttribute('aSize', new THREE.BufferAttribute(bSize, 1).setUsage(THREE.DynamicDrawUsage));
+bGeo.setAttribute('aAlpha', new THREE.BufferAttribute(bAlpha, 1).setUsage(THREE.DynamicDrawUsage));
+const bMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { uScale: { value: 400 } },
+  vertexShader: `
+    attribute float aSize; attribute float aAlpha; uniform float uScale; varying float vA;
+    void main() {
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = aSize * uScale / -mv.z;
+      gl_Position = projectionMatrix * mv;
+      vA = aAlpha;
+    }`,
+  fragmentShader: `
+    varying float vA;
+    void main() {
+      vec2 c = gl_PointCoord - 0.5;
+      float d = length(c) * 2.0;
+      if (d > 1.0) discard;
+      float rim = smoothstep(0.55, 0.95, d) * (1.0 - smoothstep(0.95, 1.0, d));
+      float hl = smoothstep(0.28, 0.0, length(c - vec2(-0.17, -0.17)));
+      float a = (rim * 0.85 + hl * 0.9 + 0.1) * vA;
+      gl_FragColor = vec4(vec3(0.93, 1.0, 1.0), a);
+    }`,
+});
+const bubbles = new THREE.Points(bGeo, bMat);
+bubbles.frustumCulled = false;
+bubbles.renderOrder = 3;
+toy.add(bubbles);
+
+function spawnBubble(x, y, z, vx, vy, size) {
+  const i = bHead; bHead = (bHead + 1) % MAXB;
+  bPos[i * 3] = x; bPos[i * 3 + 1] = y; bPos[i * 3 + 2] = z;
+  bVel[i * 3] = vx; bVel[i * 3 + 1] = vy; bVel[i * 3 + 2] = 0;
+  bSize[i] = size; bLife[i] = 1; bAlpha[i] = 0; bPhase[i] = Math.random() * 6.28;
+}
+
+/* =========================================================================
+   Sound (tiny WebAudio synth, starts on first input)
+   ========================================================================= */
+let actx = null, master = null, jetGain = [], jetFilter = [];
+let muted = false;
+try { muted = localStorage.getItem('aquaRings.muted') === '1'; } catch {}
+function initAudio() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch { return; }
+  master = actx.createGain();
+  master.gain.value = muted ? 0 : 0.55;
+  master.connect(actx.destination);
+  const len = actx.sampleRate * 2;
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  for (let s = 0; s < 2; s++) {
+    const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300; f.Q.value = 2;
+    const g = actx.createGain(); g.gain.value = 0;
+    const pan = actx.createStereoPanner ? actx.createStereoPanner() : null;
+    src.connect(f); f.connect(g);
+    if (pan) { pan.pan.value = s ? 0.45 : -0.45; g.connect(pan); pan.connect(master); } else g.connect(master);
+    src.start();
+    jetGain[s] = g; jetFilter[s] = f;
+  }
+}
+function blip(freq, dur, type = 'sine', vol = 0.06, sweep = 2.2, when = 0) {
+  if (!actx || muted) return;
+  const t = actx.currentTime + when;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(freq * sweep, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  bloop: () => blip(220 + Math.random() * 320, 0.07 + Math.random() * 0.05, 'sine', 0.035, 2.4),
+  clink: () => { blip(1320, 0.22, 'triangle', 0.09, 1.02); blip(1980, 0.18, 'sine', 0.05, 1.01, 0.03); },
+  win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => blip(f, 0.3, 'triangle', 0.08, 1.0, i * 0.09)),
+};
+function setMuted(m) {
+  muted = m;
+  try { localStorage.setItem('aquaRings.muted', m ? '1' : '0'); } catch {}
+  if (master) master.gain.value = m ? 0 : 0.55;
+  document.getElementById('soundWave').style.opacity = m ? 0 : 1;
+  soundBtn.setAttribute('aria-label', m ? 'Unmute sound' : 'Mute sound');
+}
+
+/* =========================================================================
+   Game state
+   ========================================================================= */
+let mode = 'easy';
+try { if (localStorage.getItem('aquaRings.mode') === 'classic') mode = 'classic'; } catch {}
+let state = 'intro';       // intro | play | won
+let timeStart = null, elapsed = 0, winHold = 0;
+const held = [new Set(), new Set()];
+const pressure = [0, 0], heldFor = [0, 0], pressVis = [0, 0];
+let simTime = 0;
+
+function resetRings() {
+  rings.forEach((r, i) => {
+    r.peg = -1;
+    // drop them in low, below every peg, so nothing lands for free
+    r.p.set((Math.random() * 2 - 1) * 2.4, -2.4 + Math.random() * 1.2, (Math.random() - 0.5) * 0.3);
+    r.prevY = r.p.y;
+    r.v.set((Math.random() - 0.5) * 0.4, 0, 0);
+    r.q.setFromEuler(new THREE.Euler(Math.random() * 6.28, Math.random() * 6.28, Math.random() * 6.28));
+    r.w.set((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
+  });
+}
+function restart() {
+  resetRings();
+  timeStart = null; elapsed = 0; winHold = 0;
+  lastCount = -1;
+  if (state === 'won') state = 'play';
+  winEl.hidden = true;
+  updateHud(true);
+}
+
+/* =========================================================================
+   Physics
+   ========================================================================= */
+const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpAxis = new THREE.Vector3();
+const acc = new THREE.Vector3();
+
+function jetForce(x, y, nz, P) {
+  // returns [fx, fy, dxNorm]
+  const h = y - TANK.floorY;
+  if (h < -0.2 || P <= 0) return null;
+  const hh = Math.max(h, 0);
+  const axisX = nz.x + nz.dir * PHYS.jetSlope * hh;
+  const w = 0.42 + 0.2 * hh;
+  const dx = (x - axisX) / w;
+  // strong core jet + a wide, softer stir so nearby rings get swept in too
+  const core = Math.exp(-dx * dx) / (1 + 0.13 * hh);
+  const dw = (x - axisX) / 1.25;
+  const stir = 0.3 * Math.exp(-dw * dw) / (1 + 0.35 * hh);
+  const f = P * PHYS.jet * (core + stir);
+  return [f * (nz.dir * PHYS.jetSlope + PHYS.spread * Math.max(-1.5, Math.min(1.5, dx))), f, dx];
+}
+
+function slotY(peg, k) { return peg.ballY + BALL_R * 0.8 + TUBE + k * (2 * TUBE + 0.006); }
+
+function step(dt) {
+  const cfg = MODES[mode];
+  simTime += dt;
+
+  // Pressure: a quick burst when you press, then a steady stream while held
+  for (let s = 0; s < 2; s++) {
+    if (held[s].size) {
+      heldFor[s] += dt;
+      const target = heldFor[s] < 0.35 ? 1 : 0.78;
+      pressure[s] += (target - pressure[s]) * Math.min(1, dt * 14);
+    } else {
+      heldFor[s] = 0;
+      pressure[s] = Math.max(0, pressure[s] - dt * 3.5);
+    }
+  }
+
+  // Stack slots per peg (sorted by height)
+  for (let pi = 0; pi < PEGS.length; pi++) {
+    const onPeg = rings.filter(r => r.peg === pi).sort((a, b) => a.p.y - b.p.y);
+    onPeg.forEach((r, k) => { r.slot = k; });
+  }
+
+  for (const r of rings) {
+    r.prevY = r.p.y;
+    r.axis.copy(UP).applyQuaternion(r.q);
+    const ay = Math.abs(r.axis.y);
+    const halfH = TUBE + RING_R * Math.sqrt(Math.max(0, 1 - ay * ay));
+    const halfX = TUBE + RING_R * Math.sqrt(Math.max(0, 1 - r.axis.x * r.axis.x));
+
+    // ---- Ring sitting on a peg ----
+    if (r.peg >= 0) {
+      const peg = PEGS[r.peg];
+      r.p.x += (peg.x - r.p.x) * Math.min(1, dt * 14);
+      r.p.z += (0 - r.p.z) * Math.min(1, dt * 10);
+      let ay2 = -PHYS.gravity * 1.3;
+      if (!cfg.lock) {
+        for (let s = 0; s < 2; s++) {
+          const jf = jetForce(r.p.x, r.p.y, NOZZLES[s], pressure[s]);
+          if (jf) ay2 += jf[1] * 0.6;
+        }
+      }
+      r.v.y += ay2 * dt;
+      r.v.y *= Math.exp(-PHYS.drag * 1.2 * dt);
+      r.v.x = r.v.z = 0;
+      r.p.y += r.v.y * dt;
+      const floorY = slotY(peg, r.slot);
+      if (r.p.y < floorY) { r.p.y = floorY; r.v.y = Math.abs(r.v.y) > 0.4 ? -r.v.y * 0.15 : 0; }
+      // settle flat, with a little spin
+      r.yaw += r.w.y * dt;
+      r.w.multiplyScalar(Math.exp(-3 * dt));
+      tmpQ.setFromAxisAngle(UP, r.yaw);
+      r.q.slerp(tmpQ, Math.min(1, dt * (cfg.lock ? 7 : 4)));
+      if (!cfg.lock && r.p.y > peg.tip + 0.03 && r.v.y > 0) {
+        r.peg = -1; // floated off the top
+      }
+      continue;
+    }
+
+    // ---- Free ring ----
+    acc.set(0, -PHYS.gravity, -r.p.z * 1.5);
+    for (let s = 0; s < 2; s++) {
+      const jf = jetForce(r.p.x, r.p.y, NOZZLES[s], pressure[s]);
+      if (!jf) continue;
+      acc.x += jf[0]; acc.y += jf[1];
+      acc.z += (Math.random() - 0.5) * jf[1] * 0.6;
+      // tumble
+      r.w.z += -jf[2] * jf[1] * 0.7 * dt;
+      r.w.x += (Math.random() - 0.5) * jf[1] * 2.5 * dt;
+    }
+    // near the bottom, the sloped floor funnels rings back toward the nozzles
+    if (r.p.y < floorAt(r.p.x) + 0.7) {
+      const nz = Math.abs(r.p.x - NOZZLES[0].x) < Math.abs(r.p.x - NOZZLES[1].x) ? NOZZLES[0] : NOZZLES[1];
+      const off = r.p.x - nz.x;
+      if (Math.abs(off) > 0.08) acc.x -= Math.sign(off) * 1.1;
+    }
+    // gentle swirl so the water never feels dead
+    const swirl = (pressure[0] + pressure[1]) * 0.35;
+    acc.x += Math.sin(simTime * 1.7 + r.p.y * 1.3) * swirl;
+
+    // easy-mode "magnet" over each peg
+    if (cfg.magnet) {
+      for (const peg of PEGS) {
+        const dx = r.p.x - peg.x, above = r.p.y - peg.tip;
+        if (above > 0 && above < 1.2 && Math.abs(dx) < 0.8 && r.v.y < 0.5) {
+          const k = (1 - above / 1.2) * cfg.magnet;
+          acc.x += -dx * 9 * k;
+          r.v.x *= Math.exp(-3 * k * dt);
+          acc.y -= 0.5 * k;
+        }
+      }
+    }
+
+    r.v.addScaledVector(acc, dt);
+    r.v.multiplyScalar(Math.exp(-PHYS.drag * dt));
+    r.v.z *= Math.exp(-2 * dt);
+    r.p.addScaledVector(r.v, dt);
+
+    // rotation: tumble + slowly level out when sinking (like a coin in water)
+    const target = r.axis.y >= 0 ? UP : tmpV.set(0, -1, 0);
+    tmpAxis.crossVectors(r.axis, target);
+    const level = r.v.y < 0 ? 1.6 : 0.5;
+    r.w.addScaledVector(tmpAxis, level * dt * (1 + cfg.magnet * 0.6));
+    r.w.multiplyScalar(Math.exp(-PHYS.angDrag * dt));
+    const wl = r.w.length();
+    if (wl > 1e-5) {
+      tmpQ.setFromAxisAngle(tmpV.copy(r.w).divideScalar(wl), wl * dt);
+      r.q.premultiply(tmpQ).normalize();
+    }
+
+    // walls
+    const lim = TANK.hw - halfX;
+    if (r.p.x > lim) { r.p.x = lim; r.v.x = -Math.abs(r.v.x) * 0.3; }
+    if (r.p.x < -lim) { r.p.x = -lim; r.v.x = Math.abs(r.v.x) * 0.3; }
+    if (Math.abs(r.p.z) > 0.2) { r.p.z = Math.sign(r.p.z) * 0.2; r.v.z *= -0.3; }
+    // water surface
+    const ceil = TANK.waterY - halfH * 0.7;
+    if (r.p.y > ceil) { r.p.y = ceil; r.v.y = Math.min(r.v.y, 0) - 0.05; }
+    // sloped floor
+    const fy = floorAt(r.p.x) + halfH;
+    if (r.p.y < fy) {
+      r.p.y = fy;
+      const sl = floorSlope(r.p.x);
+      const nx = -sl / Math.hypot(sl, 1), ny = 1 / Math.hypot(sl, 1);
+      const vn = r.v.x * nx + r.v.y * ny;
+      if (vn < 0) { r.v.x -= nx * vn; r.v.y -= ny * vn; }
+      r.v.x *= 0.995;
+      r.w.multiplyScalar(0.97);
+    }
+
+    // pegs: capture or collide
+    for (let pi = 0; pi < PEGS.length; pi++) {
+      const peg = PEGS[pi];
+      const dx = r.p.x - peg.x, adx = Math.abs(dx);
+      if (r.prevY >= peg.tip && r.p.y < peg.tip && adx < cfg.tol && ay >= cfg.minUpright) {
+        capture(r, pi);
+        break;
+      }
+      // the stick blocks the rim
+      if (r.p.y < peg.tip + halfH * 0.6 && r.p.y > peg.ballY && adx < halfX + 0.035 && !(r.p.y >= peg.tip && adx < cfg.tol)) {
+        const sgn = dx === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
+        const push = halfX + 0.035 - adx;
+        r.p.x += sgn * push * 0.5;
+        r.v.x += sgn * push * 6;
+        r.w.z += sgn * push * 4;
+      }
+      // the ball under the peg
+      const bx = r.p.x - peg.x, by = r.p.y - peg.ballY;
+      const bd = Math.hypot(bx, by), minD = BALL_R + halfH * 0.6 + 0.05;
+      if (bd < minD && bd > 1e-4) {
+        const pen = minD - bd;
+        r.p.x += (bx / bd) * pen; r.p.y += (by / bd) * pen;
+        const vn = (r.v.x * bx + r.v.y * by) / bd;
+        if (vn < 0) { r.v.x -= (bx / bd) * vn * 1.3; r.v.y -= (by / bd) * vn * 1.3; }
+      }
+    }
+  }
+
+  // ring vs ring
+  const MIN_D = 0.3;
+  for (let i = 0; i < rings.length; i++) {
+    const a = rings[i];
+    for (let j = i + 1; j < rings.length; j++) {
+      const b = rings[j];
+      if (a.peg >= 0 && a.peg === b.peg) continue;
+      tmpV.subVectors(b.p, a.p);
+      let d2 = tmpV.lengthSq();
+      if (d2 >= MIN_D * MIN_D) continue;
+      if (d2 < 1e-8) { tmpV.set(Math.random() - 0.5, 0.2, Math.random() - 0.5); d2 = tmpV.lengthSq(); }
+      const d = Math.sqrt(d2);
+      const ma = a.peg >= 0 ? 0 : 1, mb = b.peg >= 0 ? 0 : 1;
+      if (ma + mb === 0) continue;
+      tmpV.divideScalar(d);
+      const pen = MIN_D - d, tot = ma + mb;
+      a.p.addScaledVector(tmpV, -pen * ma / tot);
+      b.p.addScaledVector(tmpV, pen * mb / tot);
+      const rel = (b.v.x - a.v.x) * tmpV.x + (b.v.y - a.v.y) * tmpV.y + (b.v.z - a.v.z) * tmpV.z;
+      if (rel < 0) {
+        const imp = -rel * 0.8 / tot;
+        a.v.addScaledVector(tmpV, -imp * ma);
+        b.v.addScaledVector(tmpV, imp * mb);
+      }
+    }
+  }
+
+  // bubbles: spawn
+  for (let s = 0; s < 2; s++) {
+    const P = pressure[s];
+    if (P <= 0.02) continue;
+    const n = NOZZLES[s];
+    const count = P * 170 * dt + Math.random();
+    for (let k = 0; k < Math.floor(count); k++) {
+      spawnBubble(n.x + (Math.random() - 0.5) * 0.16, TANK.floorY + 0.05, (Math.random() - 0.5) * 0.6,
+        n.dir * 0.4 + (Math.random() - 0.5) * 1.2, 2 + Math.random() * 3.5 * P, 0.035 + Math.random() * Math.random() * 0.17);
+    }
+    if (Math.random() < P * 9 * dt) sfx.bloop();
+  }
+  if (Math.random() < dt * 1.6) {
+    spawnBubble((Math.random() * 2 - 1) * 2.6, floorAt(0) - 0.3, (Math.random() - 0.5) * 0.6, 0, 0.6, 0.03 + Math.random() * 0.05);
+  }
+}
+
+function capture(r, pi) {
+  r.peg = pi;
+  r.v.set(0, Math.min(r.v.y, 0) * 0.5, 0);
+  r.w.set(0, (Math.random() - 0.5) * 6, 0);
+  r.yaw = Math.random() * 6.28;
+  sfx.clink();
+  for (let k = 0; k < 10; k++) {
+    spawnBubble(r.p.x + (Math.random() - 0.5) * 0.5, r.p.y, (Math.random() - 0.5) * 0.4,
+      (Math.random() - 0.5) * 0.6, 0.8 + Math.random(), 0.03 + Math.random() * 0.05);
+  }
+}
+
+function updateBubbles(dt) {
+  for (let i = 0; i < MAXB; i++) {
+    if (bLife[i] <= 0) { bSize[i] = 0; bAlpha[i] = 0; continue; }
+    const ix = i * 3;
+    let x = bPos[ix], y = bPos[ix + 1];
+    let fx = 0, fy = 2.4;
+    for (let s = 0; s < 2; s++) {
+      const jf = jetForce(x, y, NOZZLES[s], pressure[s]);
+      if (jf) { fx += jf[0] * 0.5; fy += jf[1] * 0.4; }
+    }
+    bVel[ix] += (fx - bVel[ix] * 2.2) * dt;
+    bVel[ix + 1] += (fy - bVel[ix + 1] * 1.6) * dt;
+    bPhase[i] += dt * 9;
+    x += (bVel[ix] + Math.sin(bPhase[i]) * 0.25) * dt;
+    y += bVel[ix + 1] * dt;
+    if (x > TANK.hw - 0.05) x = TANK.hw - 0.05;
+    if (x < -TANK.hw + 0.05) x = -TANK.hw + 0.05;
+    bPos[ix] = x; bPos[ix + 1] = y;
+    const fadeIn = Math.min(1, bAlpha[i] + dt * 6);
+    if (y > TANK.waterY - 0.02) { bLife[i] -= dt * 10; bPos[ix + 1] = TANK.waterY - 0.02; }
+    bLife[i] -= dt * 0.08;
+    bAlpha[i] = Math.min(fadeIn, Math.max(0, bLife[i]));
+  }
+  bGeo.attributes.position.needsUpdate = true;
+  bGeo.attributes.aSize.needsUpdate = true;
+  bGeo.attributes.aAlpha.needsUpdate = true;
+}
+
+function updateSurface() {
+  const pos = surfGeo.attributes.position.array;
+  const h = TANK.waterY - TANK.floorY;
+  const tops = NOZZLES.map(n => n.x + n.dir * PHYS.jetSlope * h);
+  for (let i = 0; i < pos.length; i += 3) {
+    const x = surfBase[i];
+    let y = Math.sin(x * 2.6 + simTime * 1.8) * 0.012 + Math.sin(x * 5.1 - simTime * 2.3) * 0.006;
+    for (let s = 0; s < 2; s++) {
+      const d = x - tops[s];
+      y += pressure[s] * 0.09 * Math.exp(-d * d / 0.35) * (0.8 + 0.2 * Math.sin(simTime * 14 + x * 6));
+    }
+    pos[i + 1] = y;
+  }
+  surfGeo.attributes.position.needsUpdate = true;
+  surfGeo.computeVertexNormals();
+}
+
+/* =========================================================================
+   HUD
+   ========================================================================= */
+const ringCountEl = document.getElementById('ringCount');
+const ringPill = document.getElementById('ringPill');
+const timerEl = document.getElementById('timer');
+const introEl = document.getElementById('intro');
+const winEl = document.getElementById('win');
+const soundBtn = document.getElementById('soundBtn');
+const gaugeFills = [...document.querySelectorAll('.pump .fill')];
+const pumpEls = [...document.querySelectorAll('.pump')];
+let lastCount = -1, lastTimeText = '';
+
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function landedCount() { return rings.filter(r => r.peg >= 0).length; }
+function updateHud(force) {
+  const c = landedCount();
+  if (c !== lastCount || force) {
+    if (c > lastCount && lastCount >= 0) {
+      ringPill.classList.remove('bump'); void ringPill.offsetWidth; ringPill.classList.add('bump');
+    }
+    lastCount = c;
+    ringCountEl.textContent = `${c}/${RING_COUNT}`;
+  }
+  const t = fmt(elapsed);
+  if (t !== lastTimeText) { timerEl.textContent = t; lastTimeText = t; }
+  for (let s = 0; s < 2; s++) {
+    gaugeFills[s].style.strokeDashoffset = String(289 * (1 - pressure[s]));
+    pumpEls[s].classList.toggle('down', held[s].size > 0);
+  }
+}
+
+function bestKey() { return `aquaRings.best.${mode}`; }
+function checkWin(dt) {
+  if (state !== 'play') return;
+  const allSettled = rings.every(r => r.peg >= 0 && Math.abs(r.p.y - slotY(PEGS[r.peg], r.slot)) < 0.02);
+  winHold = allSettled ? winHold + dt : 0;
+  if (winHold > 0.7) {
+    state = 'won';
+    let best = null;
+    try { best = parseFloat(localStorage.getItem(bestKey())); } catch {}
+    const isBest = !(best > 0) || elapsed < best;
+    if (isBest) { best = elapsed; try { localStorage.setItem(bestKey(), String(elapsed)); } catch {} }
+    document.getElementById('winTime').textContent = fmt(elapsed);
+    document.getElementById('winBest').textContent = fmt(best);
+    document.getElementById('newBest').hidden = !isBest;
+    winEl.hidden = false;
+    sfx.win();
+    for (let k = 0; k < 120; k++) {
+      spawnBubble((Math.random() * 2 - 1) * 2.7, TANK.floorY + Math.random() * 0.5, (Math.random() - 0.5) * 0.6,
+        (Math.random() - 0.5) * 0.5, 1.5 + Math.random() * 3, 0.04 + Math.random() * 0.1);
+    }
+  }
+}
+
+/* =========================================================================
+   Input: left half / right half of the keyboard, screen or buttons
+   ========================================================================= */
+const LEFT_KEYS = new Set(['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Tab','KeyQ','KeyW','KeyE','KeyR','KeyT',
+  'CapsLock','KeyA','KeyS','KeyD','KeyF','KeyG','ShiftLeft','KeyZ','KeyX','KeyC','KeyV','KeyB','ControlLeft','AltLeft','ArrowLeft']);
+const RIGHT_KEYS = new Set(['Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','KeyY','KeyU','KeyI','KeyO','KeyP',
+  'BracketLeft','BracketRight','Backslash','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter','KeyN','KeyM','Comma',
+  'Period','Slash','ShiftRight','ControlRight','AltRight','ArrowRight']);
+
+function beginPlay() {
+  if (state !== 'intro') return;
+  state = 'play';
+  introEl.hidden = true;
+  initAudio();
+}
+function press(side, id) {
+  if (state === 'intro') beginPlay();
+  initAudio();
+  if (state === 'won') return;
+  held[side].add(id);
+  if (timeStart === null && state === 'play') timeStart = performance.now() - elapsed * 1000;
+}
+function release(id) { held[0].delete(id); held[1].delete(id); }
+function releaseAll() { held[0].clear(); held[1].clear(); }
+
+window.addEventListener('keydown', e => {
+  if (e.metaKey || (e.ctrlKey && !e.code.startsWith('Control'))) return;
+  if (e.code === 'Escape') { e.preventDefault(); if (state !== 'intro') restart(); return; }
+  if (state === 'won') {
+    if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); restart(); }
+    return;
+  }
+  let side = null;
+  if (e.code === 'Space') side = 2;
+  else if (LEFT_KEYS.has(e.code)) side = 0;
+  else if (RIGHT_KEYS.has(e.code)) side = 1;
+  if (side === null) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  if (state === 'intro') { beginPlay(); }
+  if (side === 2) { press(0, 'k' + e.code); press(1, 'k' + e.code); }
+  else press(side, 'k' + e.code);
+});
+window.addEventListener('keyup', e => release('k' + e.code));
+window.addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+
+stage.addEventListener('pointerdown', e => {
+  const rect = stage.getBoundingClientRect();
+  const side = e.clientX < rect.left + rect.width / 2 ? 0 : 1;
+  stage.setPointerCapture(e.pointerId);
+  press(side, 'p' + e.pointerId);
+});
+pumpEls.forEach(el => {
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    press(+el.dataset.side, 'p' + e.pointerId);
+  });
+  el.addEventListener('click', e => e.preventDefault());
+  el.addEventListener('keydown', e => { if (e.code === 'Enter') e.stopPropagation(); });
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => window.addEventListener(t, e => release('p' + e.pointerId), true));
+window.addEventListener('contextmenu', e => { if (e.target.closest('#stage, .pump')) e.preventDefault(); });
+
+// subtle parallax with the mouse
+const parallax = { x: 0, y: 0, tx: 0, ty: 0 };
+window.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  parallax.tx = (e.clientX / innerWidth - 0.5) * 2;
+  parallax.ty = (e.clientY / innerHeight - 0.5) * 2;
+});
+
+// Header controls
+document.getElementById('startBtn').addEventListener('click', e => { e.currentTarget.blur(); beginPlay(); });
+document.getElementById('againBtn').addEventListener('click', e => { e.currentTarget.blur(); restart(); });
+document.getElementById('restartBtn').addEventListener('click', e => { e.currentTarget.blur(); restart(); });
+soundBtn.addEventListener('click', e => { e.currentTarget.blur(); initAudio(); setMuted(!muted); });
+const modeBtns = { easy: document.getElementById('modeEasy'), classic: document.getElementById('modeClassic') };
+function setMode(m) {
+  mode = m;
+  try { localStorage.setItem('aquaRings.mode', m); } catch {}
+  modeBtns.easy.setAttribute('aria-pressed', String(m === 'easy'));
+  modeBtns.classic.setAttribute('aria-pressed', String(m === 'classic'));
+}
+Object.entries(modeBtns).forEach(([m, b]) => b.addEventListener('click', e => {
+  e.currentTarget.blur();
+  if (mode !== m) { setMode(m); restart(); }
+}));
+const swatchWrap = document.getElementById('swatches');
+let toyColor = 0;
+try { toyColor = Math.max(0, Math.min(TOY_COLORS.length - 1, +localStorage.getItem('aquaRings.color') || 0)); } catch {}
+TOY_COLORS.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.className = 'swatch';
+  b.style.background = c.hex;
+  b.title = c.name;
+  b.setAttribute('aria-label', `${c.name} toy`);
+  b.addEventListener('click', e => { e.currentTarget.blur(); setToyColor(i); });
+  swatchWrap.appendChild(b);
+});
+function setToyColor(i) {
+  toyColor = i;
+  plastic.color.set(TOY_COLORS[i].hex);
+  [...swatchWrap.children].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+  try { localStorage.setItem('aquaRings.color', String(i)); } catch {}
+}
+setToyColor(toyColor);
+setMode(mode);
+setMuted(muted);
+
+/* =========================================================================
+   Layout + loop
+   ========================================================================= */
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const halfH = 5.15, halfW = 3.75;
+  const dist = Math.max(halfH / t, halfW / (t * camera.aspect)) * 1.02 + 1.3;
+  camera.position.set(0, 0.35, dist);
+  camera.lookAt(0, -0.95, 0);
+  camera.updateProjectionMatrix();
+  bMat.uniforms.uScale.value = renderer.getDrawingBufferSize(new THREE.Vector2()).y / (2 * t);
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+resetRings();
+updateHud(true);
+
+const FIXED = 1 / 120;
+let accTime = 0, last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  accTime += dt;
+  while (accTime >= FIXED) { step(FIXED); accTime -= FIXED; }
+
+  if (state === 'play' && timeStart !== null) elapsed = (now - timeStart) / 1000;
+  checkWin(dt);
+
+  updateBubbles(dt);
+  updateSurface();
+
+  for (const r of rings) { r.mesh.position.copy(r.p); r.mesh.quaternion.copy(r.q); }
+  for (let s = 0; s < 2; s++) {
+    pressVis[s] += ((held[s].size ? 1 : 0) - pressVis[s]) * Math.min(1, dt * 25);
+    buttons[s].position.z = 0.22 - pressVis[s] * 0.18;
+    if (jetGain[s]) {
+      jetGain[s].gain.setTargetAtTime(muted ? 0 : pressure[s] * 0.22, actx.currentTime, 0.03);
+      jetFilter[s].frequency.setTargetAtTime(250 + pressure[s] * 650, actx.currentTime, 0.05);
+    }
+  }
+
+  parallax.x += (parallax.tx - parallax.x) * Math.min(1, dt * 3);
+  parallax.y += (parallax.ty - parallax.y) * Math.min(1, dt * 3);
+  const shake = (pressure[0] + pressure[1]) * 0.006;
+  toy.rotation.y = BASE_ROT.y + parallax.x * 0.07 + Math.sin(now * 0.05) * shake;
+  toy.rotation.x = BASE_ROT.x + parallax.y * 0.025;
+  toy.position.y = -(pressVis[0] + pressVis[1]) * 0.015;
+
+  updateHud(false);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+
+// expose for debugging in the console
+window.__aqua = { rings, PHYS, MODES, PEGS, pressure, held, press, release, restart, step,
+  // headless helper: simulate `sec` seconds with jets held per side
+  sim(sec, left = false, right = false) {
+    if (left) held[0].add('sim'); if (right) held[1].add('sim');
+    for (let t = 0; t < sec; t += FIXED) step(FIXED);
+    held[0].delete('sim'); held[1].delete('sim');
+    return landedCount();
+  },
+  setMode, };
+</script>
+</body>
+</html>
